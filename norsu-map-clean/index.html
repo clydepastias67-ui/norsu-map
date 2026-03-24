@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NORSU Digital Map</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --blue:     #0d4f84;
+  --blue-dk:  #08375b;
+  --gold:     #f5c518;
+  --green:    #16a34a;
+  --red:      #dc2626;
+  --text:     #0f172a;
+  --muted:    #64748b;
+  --border:   #e2e8f0;
+}
+
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body { height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: var(--blue); }
+
+/* ════════════════════════════════
+   SCREENS
+   ════════════════════════════════ */
+.screen {
+  position: fixed; inset: 0;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.screen.active { display: flex; }
+
+/* ════════════════════════════════
+   WELCOME
+   ════════════════════════════════ */
+#welcome {
+  background: linear-gradient(150deg, #071d38 0%, #0d4f84 60%, #1565a8 100%);
+  padding: 40px 32px; text-align: center; gap: 0;
+}
+
+.w-logo {
+  width: 96px;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,.4));
+  animation: popIn .8s cubic-bezier(.34,1.56,.64,1) both;
+  margin-bottom: 20px;
+}
+@keyframes popIn {
+  from { transform: scale(.6); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.w-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 4px;
+  text-transform: uppercase; color: var(--gold);
+  margin-bottom: 8px;
+  animation: slideUp .5s .3s both;
+}
+.w-h1 {
+  font-size: 36px; font-weight: 700; color: #fff;
+  line-height: 1.1; margin-bottom: 6px;
+  animation: slideUp .5s .4s both;
+}
+.w-sub {
+  font-size: 13px; color: rgba(255,255,255,.5);
+  margin-bottom: 36px;
+  animation: slideUp .5s .5s both;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.btn-gold {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 34px;
+  background: var(--gold); color: #0a2540;
+  border: none; border-radius: 50px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 28px rgba(245,197,24,.35);
+  transition: transform .18s, box-shadow .18s;
+  animation: slideUp .5s .6s both;
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(245,197,24,.45); }
+.btn-gold:active { transform: scale(.97); }
+
+/* ════════════════════════════════
+   CAMPUS SELECT
+   ════════════════════════════════ */
+#campus-select {
+  background: linear-gradient(150deg, #071d38 0%, #0d4f84 60%, #1565a8 100%);
+  padding: 32px 20px; gap: 18px;
+}
+.cs-logo   { width: 52px; opacity: .9; }
+.cs-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+.cs-h2     { font-size: 22px; font-weight: 700; color: #fff; }
+
+.campus-list { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+.campus-item {
+  background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.14);
+  border-radius: 14px; padding: 16px 18px;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 14px;
+}
+.campus-item:hover  { background: rgba(255,255,255,.16); border-color: var(--gold); transform: translateY(-2px); }
+.campus-item:active { transform: scale(.98); }
+
+.ci-icon {
+  width: 40px; height: 40px;
+  background: rgba(245,197,24,.15); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.ci-name  { font-size: 15px; font-weight: 700; color: #fff; }
+.ci-addr  { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+.ci-arrow { color: rgba(255,255,255,.3); font-size: 18px; margin-left: auto; }
+
+.btn-ghost {
+  background: none; border: none;
+  color: rgba(255,255,255,.45);
+  font-size: 13px; cursor: pointer;
+  padding: 8px 14px; border-radius: 20px;
+  transition: color .2s, background .2s;
+}
+.btn-ghost:hover { color: #fff; background: rgba(255,255,255,.1); }
+
+/* ════════════════════════════════
+   MAP SCREEN
+   ════════════════════════════════ */
+#map-screen { background: #1e293b; justify-content: flex-start; }
+
+/* Top bar */
+.topbar {
+  width: 100%; background: var(--blue);
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 13px; flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3); z-index: 10;
+}
+.topbar-logo   { width: 30px; flex-shrink: 0; }
+.topbar-info   { flex: 1; min-width: 0; }
+.topbar-campus {
+  font-size: 13px; font-weight: 700; color: var(--gold);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.topbar-addr {
+  font-size: 10px; color: rgba(255,255,255,.5);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.topbar-back {
+  background: rgba(255,255,255,.1); border: none; color: #fff;
+  padding: 6px 12px; border-radius: 18px;
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+  transition: background .2s;
+}
+.topbar-back:hover { background: rgba(255,255,255,.2); }
+
+/* Map area */
+.map-container { position: relative; flex: 1; width: 100%; overflow: hidden; min-height: 0; }
+#map-canvas    { display: block; width: 100%; height: 100%; }
+
+/* ── Building hit areas ── */
+.b-hit {
+  position: absolute; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5;
+}
+.b-btn {
+  position: relative;
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(4px);
+  border: 1.5px solid rgba(0,0,0,.12);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-size: 9px; font-weight: 600; color: var(--text);
+  white-space: nowrap; text-align: center; line-height: 1.3;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  transition: all .15s;
+  pointer-events: none;
+  max-width: 90px;
+}
+.b-hit:hover .b-btn {
+  background: var(--gold); border-color: var(--gold);
+  color: #0a2540; transform: scale(1.08);
+  box-shadow: 0 3px 10px rgba(0,0,0,.25);
+}
+.b-hit.origin      .b-btn { background: var(--green); border-color: var(--green); color: #fff; }
+.b-hit.destination .b-btn { background: var(--red);   border-color: var(--red);   color: #fff; }
+.b-hit.origin      .b-btn { animation: gPulse 2s infinite; }
+
+@keyframes gPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.5); }
+  50%     { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+}
+
+/* ════════════════════════════════
+   BOTTOM PANEL
+   ════════════════════════════════ */
+.bottom-panel {
+  width: 100%; background: #fff; flex-shrink: 0;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -6px 24px rgba(0,0,0,.18);
+  display: flex; flex-direction: column;
+  max-height: 52vh;
+}
+.panel-handle {
+  width: 32px; height: 4px; background: #cbd5e1;
+  border-radius: 2px; margin: 8px auto 0;
+}
+
+/* Status row */
+.panel-status {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px 0;
+}
+.sdot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #94a3b8; flex-shrink: 0; transition: background .2s;
+}
+.sdot.on { background: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.2); }
+.slabel  { flex: 1; font-size: 12px; color: var(--muted); }
+.slabel strong { color: var(--text); }
+.btn-sm  {
+  background: #f1f5f9; border: none; color: var(--muted);
+  padding: 4px 11px; border-radius: 16px;
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  flex-shrink: 0; transition: background .2s;
+}
+.btn-sm:hover { background: #e2e8f0; }
+
+/* Nav strip */
+.nav-strip {
+  display: none; align-items: center; gap: 6px;
+  margin: 8px 14px 0; padding: 8px 12px;
+  background: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe;
+}
+.nav-strip.show { display: flex; }
+.nbadge {
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36%;
+}
+.nbadge.from { background: var(--green); color: #fff; }
+.nbadge.to   { background: var(--red);   color: #fff; }
+.narr        { color: var(--blue); font-size: 14px; flex-shrink: 0; }
+.nav-clear   { background: none; border: none; color: #94a3b8; font-size: 15px; cursor: pointer; margin-left: auto; padding: 0 2px; }
+.nav-clear:hover { color: var(--text); }
+
+/* Directions */
+.directions-wrap {
+  display: none;
+  margin: 6px 14px 0; padding: 8px 12px;
+  background: #f8fafc; border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow-y: auto; max-height: 120px;
+}
+.directions-wrap.show { display: block; }
+.dir-title { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.dir-steps { display: flex; flex-direction: column; gap: 4px; }
+.dir-step  { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; color: var(--text); line-height: 1.4; }
+.dir-num   {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--blue); color: #fff;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+
+/* Chips */
+.chips-section { padding: 8px 14px 4px; flex-shrink: 0; }
+.chips-label   { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.chips-scroll  { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.chips-scroll::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; padding: 5px 11px;
+  background: #f1f5f9; border: 1.5px solid var(--border);
+  border-radius: 16px; font-size: 11px; font-weight: 500;
+  color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.chip:hover     { background: #dbeafe; border-color: #93c5fd; color: var(--blue); }
+.chip.is-origin { background: #dcfce7; border-color: #86efac; color: var(--green); pointer-events: none; }
+.chip.is-dest   { background: var(--red); border-color: var(--red); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ WELCOME ══════════ -->
+<div class="screen active" id="welcome">
+  <img class="w-logo" src="assets/norsulogo.png" alt="NORSU Logo">
+  <div class="w-eyebrow">Negros Oriental State University</div>
+  <div class="w-h1">Campus<br>Navigator</div>
+  <div class="w-sub">Interactive map for students &amp; visitors</div>
+  <button class="btn-gold" onclick="App.goToScreen('campus-select')">Get Started →</button>
+</div>
+
+<!-- ══════════ CAMPUS SELECT ══════════ -->
+<div class="screen" id="campus-select">
+  <img class="cs-logo" src="assets/norsulogo.png" alt="NORSU Logo">
+  <div class="cs-eyebrow">Select Campus</div>
+  <div class="cs-h2">Which campus are you at?</div>
+  <div class="campus-list">
+    <div class="campus-item" onclick="App.loadMap('campus1')">
+      <div class="ci-icon">🏛️</div>
+      <div>
+        <div class="ci-name">Main Campus 1</div>
+        <div class="ci-addr">Kagawasan Avenue, Dumaguete City</div>
+      </div>
+      <div class="ci-arrow">›</div>
+    </div>
+    <div class="campus-item" onclick="App.loadMap('campus2')">
+      <div class="ci-icon">🎓</div>
+      <div>
+        <div class="ci-name">Main Campus 2</div>
+        <div class="ci-addr">Brgy. Bajumpandan, Dumaguete City</div>
+      </div>
+      <div class="ci-arrow">›</div>
+    </div>
+  </div>
+  <button class="btn-ghost" onclick="App.goToScreen('welcome')">← Back</button>
+</div>
+
+<!-- ══════════ MAP SCREEN ══════════ -->
+<div class="screen" id="map-screen">
+
+  <div class="topbar">
+    <img class="topbar-logo" src="assets/norsulogo.png" alt="NORSU">
+    <div class="topbar-info">
+      <div class="topbar-campus" id="tb-campus">MAIN CAMPUS 1</div>
+      <div class="topbar-addr"   id="tb-addr">Kagawasan Avenue, Dumaguete City</div>
+    </div>
+    <button class="topbar-back" onclick="App.goToScreen('campus-select')">← Campuses</button>
+  </div>
+
+  <div class="map-container" id="map-container">
+    <canvas id="map-canvas"></canvas>
+    <!-- .b-hit overlays injected by ui.js -->
+  </div>
+
+  <div class="bottom-panel">
+    <div class="panel-handle"></div>
+
+    <div class="panel-status">
+      <div class="sdot" id="sdot"></div>
+      <div class="slabel" id="slabel">Tap a building to set your location</div>
+      <button class="btn-sm" id="btn-change" style="display:none" onclick="App.resetOrigin()">Change</button>
+    </div>
+
+    <div class="nav-strip" id="nav-strip">
+      <span class="nbadge from" id="nav-from">—</span>
+      <span class="narr">→</span>
+      <span class="nbadge to"   id="nav-to">—</span>
+      <button class="nav-clear" onclick="App.resetDest()" title="Clear route">✕</button>
+    </div>
+
+    <div class="directions-wrap" id="directions-wrap">
+      <div class="dir-title">📍 Step-by-step directions</div>
+      <div class="dir-steps" id="dir-steps"></div>
+    </div>
+
+    <div class="chips-section">
+      <div class="chips-label" id="chips-label">Your location</div>
+      <div class="chips-scroll" id="chips-scroll"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ SCRIPTS (order matters) ══════════ -->
+<script src="js/data.js"></script>
+<script src="js/pathfinder.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
