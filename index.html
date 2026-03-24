@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NORSU Digital Map</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:   #0d4f84;
+  --gold:   #f5c518;
+  --green:  #16a34a;
+  --red:    #dc2626;
+  --text:   #0f172a;
+  --muted:  #64748b;
+  --border: #e2e8f0;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; font-family:'DM Sans',sans-serif; background:var(--blue); overflow:hidden; }
+
+/* ── SCREENS ── */
+.screen { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; }
+.screen.active { display:flex; }
+
+/* ── WELCOME ── */
+#welcome {
+  background: linear-gradient(160deg,#061728 0%,#0d4f84 55%,#1a6aad 100%);
+  padding:40px 32px; text-align:center; gap:0;
+}
+.w-logo { width:88px; margin-bottom:24px; animation:popIn .7s cubic-bezier(.34,1.56,.64,1) both; filter:drop-shadow(0 6px 20px rgba(0,0,0,.35)); }
+@keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+.w-tag { font-size:10px; font-weight:600; letter-spacing:4px; text-transform:uppercase; color:var(--gold); margin-bottom:10px; animation:up .5s .3s both; }
+.w-h1  { font-size:38px; font-weight:600; color:#fff; line-height:1.1; margin-bottom:8px; animation:up .5s .4s both; }
+.w-sub { font-size:13px; color:rgba(255,255,255,.45); margin-bottom:40px; animation:up .5s .5s both; }
+@keyframes up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.btn-gold {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:14px 36px; background:var(--gold); color:#0a2540;
+  border:none; border-radius:50px; font-family:inherit;
+  font-size:14px; font-weight:600; cursor:pointer;
+  box-shadow:0 6px 28px rgba(245,197,24,.3);
+  transition:transform .18s,box-shadow .18s; animation:up .5s .6s both;
+}
+.btn-gold:hover  { transform:translateY(-2px); box-shadow:0 10px 36px rgba(245,197,24,.4); }
+.btn-gold:active { transform:scale(.97); }
+
+/* ── CAMPUS SELECT ── */
+#campus-select {
+  background:linear-gradient(160deg,#061728 0%,#0d4f84 55%,#1a6aad 100%);
+  gap:18px; padding:32px 20px;
+}
+.cs-logo { width:48px; opacity:.9; }
+.cs-tag  { font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--gold); }
+.cs-h2   { font-size:22px; font-weight:600; color:#fff; }
+.campus-list { width:100%; max-width:340px; display:flex; flex-direction:column; gap:10px; }
+.campus-item {
+  background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.12);
+  border-radius:14px; padding:16px 18px; cursor:pointer;
+  display:flex; align-items:center; gap:14px; transition:all .2s;
+}
+.campus-item:hover { background:rgba(255,255,255,.15); border-color:var(--gold); transform:translateY(-2px); }
+.ci-icon { width:40px; height:40px; background:rgba(245,197,24,.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.ci-name { font-size:15px; font-weight:600; color:#fff; }
+.ci-addr { font-size:11px; color:rgba(255,255,255,.45); margin-top:2px; }
+.ci-arr  { color:rgba(255,255,255,.3); font-size:18px; margin-left:auto; }
+.btn-ghost { background:none; border:none; color:rgba(255,255,255,.4); font-family:inherit; font-size:13px; cursor:pointer; padding:8px 16px; border-radius:20px; transition:color .2s,background .2s; }
+.btn-ghost:hover { color:#fff; background:rgba(255,255,255,.1); }
+
+/* ── MAP SCREEN ── */
+#map-screen { justify-content:flex-start; background:#1e293b; }
+
+.topbar {
+  width:100%; background:var(--blue); display:flex; align-items:center; gap:10px;
+  padding:9px 13px; flex-shrink:0; z-index:10; box-shadow:0 2px 12px rgba(0,0,0,.3);
+}
+.topbar-logo   { width:28px; flex-shrink:0; }
+.topbar-campus { font-size:13px; font-weight:600; color:var(--gold); }
+.topbar-addr   { font-size:10px; color:rgba(255,255,255,.45); }
+.topbar-back   { background:rgba(255,255,255,.1); border:none; color:#fff; font-family:inherit; padding:6px 12px; border-radius:18px; font-size:11px; font-weight:500; cursor:pointer; margin-left:auto; flex-shrink:0; transition:background .2s; }
+.topbar-back:hover { background:rgba(255,255,255,.2); }
+
+/* Map image fills remaining space above panel */
+.map-area {
+  flex:1; min-height:0; width:100%;
+  background:#2d3748; display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.map-area img { width:100%; height:100%; object-fit:contain; display:block; }
+
+/* ── BOTTOM PANEL ── */
+.panel {
+  width:100%; background:#fff; flex-shrink:0;
+  border-radius:18px 18px 0 0;
+  box-shadow:0 -4px 24px rgba(0,0,0,.18);
+  padding:0 0 8px;
+}
+.panel-handle { width:32px; height:4px; background:#cbd5e1; border-radius:2px; margin:8px auto 12px; }
+
+/* From / To selectors */
+.selectors { display:flex; flex-direction:column; gap:8px; padding:0 14px; }
+.sel-row   { display:flex; align-items:center; gap:8px; }
+.sel-dot   { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.sel-dot.from { background:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.2); }
+.sel-dot.to   { background:var(--red);   box-shadow:0 0 0 3px rgba(220,38,38,.2); }
+.sel-label { font-size:11px; font-weight:600; color:var(--muted); width:32px; flex-shrink:0; text-transform:uppercase; letter-spacing:.5px; }
+.sel-select {
+  flex:1; padding:8px 12px; border:1.5px solid var(--border);
+  border-radius:10px; font-family:inherit; font-size:13px;
+  color:var(--text); background:#f8fafc; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+  cursor:pointer; transition:border-color .2s;
+}
+.sel-select:focus { outline:none; border-color:var(--blue); }
+.sel-select.has-val.from { border-color:var(--green); background-color:#f0fdf4; color:#166534; }
+.sel-select.has-val.to   { border-color:var(--red);   background-color:#fef2f2; color:#991b1b; }
+
+/* Divider */
+.sel-divider { height:1px; background:var(--border); margin:10px 14px 8px; }
+
+/* Route chain */
+.route-wrap { padding:0 14px; display:none; }
+.route-wrap.show { display:block; }
+.route-chain {
+  background:#f8fafc; border:1px solid var(--border);
+  border-radius:12px; padding:10px 12px;
+}
+.route-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.route-title { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+.route-clear { background:none; border:none; font-size:12px; color:#94a3b8; cursor:pointer; font-family:inherit; padding:2px 6px; border-radius:8px; transition:color .15s,background .15s; }
+.route-clear:hover { color:var(--text); background:#e2e8f0; }
+.route-path { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.rnode {
+  padding:3px 10px; border-radius:14px;
+  font-family:'DM Mono',monospace; font-size:11px; font-weight:500;
+  background:#dbeafe; color:#1e40af; white-space:nowrap;
+}
+.rnode.start { background:#dcfce7; color:#166534; }
+.rnode.end   { background:#fee2e2; color:#991b1b; }
+.rarr { color:#94a3b8; font-size:13px; }
+
+/* Go button */
+.go-wrap { padding:8px 14px 0; }
+.btn-go {
+  width:100%; padding:11px; background:var(--blue); color:#fff;
+  border:none; border-radius:12px; font-family:inherit;
+  font-size:14px; font-weight:600; cursor:pointer;
+  transition:background .2s, transform .15s;
+}
+.btn-go:hover  { background:#0a3d68; }
+.btn-go:active { transform:scale(.98); }
+.btn-go:disabled { background:#94a3b8; cursor:default; transform:none; }
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div class="screen active" id="welcome">
+  <img class="w-logo" src="assets/norsulogo.png" alt="NORSU">
+  <div class="w-tag">Negros Oriental State University</div>
+  <div class="w-h1">Campus<br>Navigator</div>
+  <div class="w-sub">Interactive map for students &amp; visitors</div>
+  <button class="btn-gold" onclick="App.goTo('campus-select')">Get Started →</button>
+</div>
+
+<!-- CAMPUS SELECT -->
+<div class="screen" id="campus-select">
+  <img class="cs-logo" src="assets/norsulogo.png" alt="NORSU">
+  <div class="cs-tag">Select Campus</div>
+  <div class="cs-h2">Which campus are you at?</div>
+  <div class="campus-list">
+    <div class="campus-item" onclick="App.loadCampus('campus1')">
+      <div class="ci-icon">🏛️</div>
+      <div>
+        <div class="ci-name">Main Campus 1</div>
+        <div class="ci-addr">Kagawasan Avenue, Dumaguete City</div>
+      </div>
+      <div class="ci-arr">›</div>
+    </div>
+    <div class="campus-item" onclick="App.loadCampus('campus2')">
+      <div class="ci-icon">🎓</div>
+      <div>
+        <div class="ci-name">Main Campus 2</div>
+        <div class="ci-addr">Brgy. Bajumpandan, Dumaguete City</div>
+      </div>
+      <div class="ci-arr">›</div>
+    </div>
+  </div>
+  <button class="btn-ghost" onclick="App.goTo('welcome')">← Back</button>
+</div>
+
+<!-- MAP SCREEN -->
+<div class="screen" id="map-screen">
+
+  <div class="topbar">
+    <img class="topbar-logo" src="assets/norsulogo.png" alt="NORSU">
+    <div>
+      <div class="topbar-campus" id="tb-campus">MAIN CAMPUS 1</div>
+      <div class="topbar-addr"   id="tb-addr">Kagawasan Avenue, Dumaguete City</div>
+    </div>
+    <button class="topbar-back" onclick="App.goTo('campus-select')">← Campuses</button>
+  </div>
+
+  <div class="map-area">
+    <img id="map-img" src="" alt="Campus Map">
+  </div>
+
+  <div class="panel">
+    <div class="panel-handle"></div>
+
+    <div class="selectors">
+      <div class="sel-row">
+        <div class="sel-dot from"></div>
+        <div class="sel-label">From</div>
+        <select class="sel-select" id="sel-from" onchange="App.onFromChange()">
+          <option value="">Select starting building…</option>
+        </select>
+      </div>
+      <div class="sel-row">
+        <div class="sel-dot to"></div>
+        <div class="sel-label">To</div>
+        <select class="sel-select" id="sel-to" onchange="App.onToChange()">
+          <option value="">Select destination…</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sel-divider"></div>
+
+    <div class="route-wrap" id="route-wrap">
+      <div class="route-chain">
+        <div class="route-top">
+          <div class="route-title">Route</div>
+          <button class="route-clear" onclick="App.clearRoute()">✕ Clear</button>
+        </div>
+        <div class="route-path" id="route-path"></div>
+      </div>
+    </div>
+
+    <div class="go-wrap">
+      <button class="btn-go" id="btn-go" disabled onclick="App.getDirections()">Get Directions</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CAMPUS_INFO = {
+  campus1: { label:'MAIN CAMPUS 1', address:'Kagawasan Avenue, Dumaguete City',   img:'assets/campus1.png' },
+  campus2: { label:'MAIN CAMPUS 2', address:'Brgy. Bajumpandan, Dumaguete City',  img:'assets/campus2.png' },
+};
+
+const BUILDINGS = {
+  campus1: [
+    { id:'main-gate',   name:'Main Gate',                      neighbors:['admin','cas','cthm'] },
+    { id:'cas',         name:'CAS Building',                   neighbors:['main-gate','megatronics','courts','admin'] },
+    { id:'megatronics', name:'Megatronics Building',           neighbors:['cas','gate2','st'] },
+    { id:'gate2',       name:'Gate 2',                         neighbors:['megatronics','st'] },
+    { id:'cthm',        name:'CTHM Building',                  neighbors:['main-gate','gate4','gym'] },
+    { id:'admin',       name:'Admin Building',                 neighbors:['main-gate','gym','cas'] },
+    { id:'gate4',       name:'Gate 4',                         neighbors:['cthm','cba'] },
+    { id:'courts',      name:'Basketball / Volleyball Courts', neighbors:['cas','gym','motorpool'] },
+    { id:'gym',         name:'GYM',                            neighbors:['cthm','admin','pe-office','cba','courts'] },
+    { id:'motorpool',   name:'Motorpool',                      neighbors:['courts','pe-office','canteen'] },
+    { id:'st',          name:'ST Building',                    neighbors:['megatronics','gate2','cit'] },
+    { id:'cba',         name:'CBA Building',                   neighbors:['gate4','gym','cnpahs'] },
+    { id:'pe-office',   name:'PE / Cultural & Sports',         neighbors:['gym','motorpool','cnpahs'] },
+    { id:'canteen',     name:'Canteen',                        neighbors:['motorpool','cit'] },
+    { id:'cnpahs',      name:'CNPAHS Building',                neighbors:['cba','pe-office'] },
+    { id:'cit',         name:'CIT Building',                   neighbors:['canteen','st','sas','psychology'] },
+    { id:'psychology',  name:'Psychology Building',            neighbors:['st','cit','cted','gate3'] },
+    { id:'sas',         name:'SAS Hall',                       neighbors:['cit','cted'] },
+    { id:'cted',        name:'CTED Building',                  neighbors:['sas','psychology','gate3'] },
+    { id:'gate3',       name:'Gate 3',                         neighbors:['psychology','cted'] },
+  ],
+  campus2: [
+    { id:'ccje-a',        name:'CCJE Building A',          neighbors:['ccje-b','canteen'] },
+    { id:'ccje-b',        name:'CCJE Building B',          neighbors:['ccje-a','mechanical','aviation'] },
+    { id:'mechanical',    name:'Mechanical Engineering',   neighbors:['ccje-b','cea','aviation'] },
+    { id:'cea',           name:'CEA Building',             neighbors:['mechanical','guardhouse'] },
+    { id:'canteen',       name:'Canteen',                  neighbors:['ccje-a','cit','aviation'] },
+    { id:'cit',           name:'CIT Building',             neighbors:['canteen','maritime','aviation'] },
+    { id:'maritime',      name:'Old Maritime Building',    neighbors:['cit','st'] },
+    { id:'aviation',      name:'Aviation Building',        neighbors:['canteen','cit','ccje-b','mechanical','st'] },
+    { id:'aviation-area', name:'Aviation Working Area',    neighbors:['aviation','stage','open-field'] },
+    { id:'st',            name:'ST Building',              neighbors:['maritime','aviation'] },
+    { id:'stage',         name:'Stage',                    neighbors:['aviation-area','open-field'] },
+    { id:'open-field',    name:'Open Field',               neighbors:['stage','aviation-area'] },
+    { id:'guardhouse',    name:'Guard House',              neighbors:['cea','main-gate'] },
+    { id:'main-gate',     name:'Main Gate',                neighbors:['guardhouse','open-field'] },
+  ],
+};
+
+function findPath(fromId, toId, buildings) {
+  if (fromId === toId) return [fromId];
+  const queue = [[fromId]], visited = new Set([fromId]);
+  while (queue.length) {
+    const path = queue.shift();
+    const cur  = path[path.length - 1];
+    const node = buildings.find(b => b.id === cur);
+    if (!node) continue;
+    for (const n of (node.neighbors || [])) {
+      if (visited.has(n)) continue;
+      const np = [...path, n];
+      if (n === toId) return np;
+      visited.add(n); queue.push(np);
+    }
+  }
+  return [fromId, toId];
+}
+
+const App = (() => {
+  let campus = null;
+
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function loadCampus(c) {
+    campus = c;
+    document.getElementById('tb-campus').textContent = CAMPUS_INFO[c].label;
+    document.getElementById('tb-addr').textContent   = CAMPUS_INFO[c].address;
+    document.getElementById('map-img').src           = CAMPUS_INFO[c].img;
+    populateSelects(c);
+    clearRoute();
+    goTo('map-screen');
+  }
+
+  function populateSelects(c) {
+    const buildings = BUILDINGS[c];
+    ['sel-from','sel-to'].forEach(sid => {
+      const sel = document.getElementById(sid);
+      sel.innerHTML = `<option value="">${sid === 'sel-from' ? 'Select starting building…' : 'Select destination…'}</option>`;
+      buildings.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id; opt.textContent = b.name;
+        sel.appendChild(opt);
+      });
+      sel.className = 'sel-select';
+    });
+  }
+
+  function onFromChange() {
+    const sel = document.getElementById('sel-from');
+    sel.className = 'sel-select' + (sel.value ? ' has-val from' : '');
+    updateGoBtn();
+    document.getElementById('route-wrap').classList.remove('show');
+  }
+
+  function onToChange() {
+    const sel = document.getElementById('sel-to');
+    sel.className = 'sel-select' + (sel.value ? ' has-val to' : '');
+    updateGoBtn();
+    document.getElementById('route-wrap').classList.remove('show');
+  }
+
+  function updateGoBtn() {
+    const f = document.getElementById('sel-from').value;
+    const t = document.getElementById('sel-to').value;
+    document.getElementById('btn-go').disabled = !(f && t && f !== t);
+  }
+
+  function getDirections() {
+    const fromId = document.getElementById('sel-from').value;
+    const toId   = document.getElementById('sel-to').value;
+    if (!fromId || !toId || fromId === toId) return;
+
+    const path = findPath(fromId, toId, BUILDINGS[campus]);
+    const rp   = document.getElementById('route-path');
+    rp.innerHTML = path.map((id, i) => {
+      const name = BUILDINGS[campus].find(b => b.id === id)?.name ?? id;
+      const cls  = i === 0 ? 'start' : i === path.length - 1 ? 'end' : '';
+      const arr  = i < path.length - 1 ? '<span class="rarr">→</span>' : '';
+      return `<span class="rnode ${cls}">${name}</span>${arr}`;
+    }).join('');
+
+    document.getElementById('route-wrap').classList.add('show');
+  }
+
+  function clearRoute() {
+    document.getElementById('sel-from').value = '';
+    document.getElementById('sel-to').value   = '';
+    document.getElementById('sel-from').className = 'sel-select';
+    document.getElementById('sel-to').className   = 'sel-select';
+    document.getElementById('route-wrap').classList.remove('show');
+    document.getElementById('btn-go').disabled = true;
+  }
+
+  return { goTo, loadCampus, onFromChange, onToChange, getDirections, clearRoute };
+})();
+</script>
+</body>
+</html>
