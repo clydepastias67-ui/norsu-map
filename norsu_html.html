@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NORSU Digital Map</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css.css">
+</head>
+<body>
+
+<!-- WELCOME -->
+<div class="screen active" id="welcome">
+  <img class="w-logo" src="assets/norsulogo.png" alt="NORSU">
+  <div class="w-tag">Negros Oriental State University</div>
+  <div class="w-h1">Campus<br>Navigator</div>
+  <div class="w-sub">Interactive map for students &amp; visitors</div>
+  <button class="btn-gold" onclick="App.goTo('campus-select')">Get Started →</button>
+</div>
+
+<!-- CAMPUS SELECT -->
+<div class="screen" id="campus-select">
+  <img class="cs-logo" src="assets/norsulogo.png" alt="NORSU">
+  <div class="cs-tag">Select Campus</div>
+  <div class="cs-h2">Which campus are you at?</div>
+  <div class="campus-list">
+    <div class="campus-item" onclick="App.loadCampus('campus1')">
+      <div class="ci-icon">🏛️</div>
+      <div>
+        <div class="ci-name">Main Campus 1</div>
+        <div class="ci-addr">Kagawasan Avenue, Dumaguete City</div>
+      </div>
+      <div class="ci-arr">›</div>
+    </div>
+    <div class="campus-item" onclick="App.loadCampus('campus2')">
+      <div class="ci-icon">🎓</div>
+      <div>
+        <div class="ci-name">Main Campus 2</div>
+        <div class="ci-addr">Brgy. Bajumpandan, Dumaguete City</div>
+      </div>
+      <div class="ci-arr">›</div>
+    </div>
+  </div>
+  <button class="btn-ghost" onclick="App.goTo('welcome')">← Back</button>
+</div>
+
+<!-- MAP SCREEN -->
+<div class="screen" id="map-screen">
+
+  <div class="topbar">
+    <img class="topbar-logo" src="assets/norsulogo.png" alt="NORSU">
+    <div>
+      <div class="topbar-campus" id="tb-campus">MAIN CAMPUS 1</div>
+      <div class="topbar-addr"   id="tb-addr">Kagawasan Avenue, Dumaguete City</div>
+    </div>
+    <button class="topbar-back" onclick="App.goTo('campus-select')">← Campuses</button>
+  </div>
+
+  <!-- Map + SVG overlay in the same container -->
+  <div class="map-area">
+    <div class="map-wrap">
+      <img id="map-img" src="" alt="Campus Map">
+      <svg id="map-svg" xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-handle"></div>
+
+    <div class="selectors">
+      <div class="sel-row">
+        <div class="sel-dot from"></div>
+        <div class="sel-label">From</div>
+        <select class="sel-select" id="sel-from" onchange="App.onFromChange()">
+          <option value="">Select starting building…</option>
+        </select>
+      </div>
+      <div class="sel-row">
+        <div class="sel-dot to"></div>
+        <div class="sel-label">To</div>
+        <select class="sel-select" id="sel-to" onchange="App.onToChange()">
+          <option value="">Select destination…</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sel-divider"></div>
+
+    <div class="route-wrap" id="route-wrap">
+      <div class="route-chain">
+        <div class="route-top">
+          <div class="route-title">Route</div>
+          <button class="route-clear" onclick="App.clearRoute()">✕ Clear</button>
+        </div>
+        <div class="route-path" id="route-path"></div>
+      </div>
+    </div>
+
+    <div class="go-wrap">
+      <button class="btn-go" id="btn-go" disabled onclick="App.getDirections()">Get Directions</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
